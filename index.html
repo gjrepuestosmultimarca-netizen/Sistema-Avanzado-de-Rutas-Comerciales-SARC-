@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🗺️ Sistema Avanzado de Rutas Comerciales</title>
+    
+    <!-- Librerías Externas (CDN) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    
+    <!-- Hoja de Estilos -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- ===== LOGIN SCREEN ===== -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <h1>🗺️ SARC </h1>
+				<h2> Evidencia GA6-220501096-AA4-EV03.Diseño front-end que cumpla con los requerimientos del proyecto </h2>
+				<h3> CC. 91467074 GERSON ENRIQUE JOYA FICHA 3186657 </h3>
+				<p>Sistema Avanzado de Rutas Comerciales</p>
+            </div>
+            <div id="loginError" class="error-message">
+                <span>⚠️</span>
+                <span id="loginErrorText">Usuario o contraseña incorrectos</span>
+            </div>
+            <div id="loginSuccess" class="success-message">
+                <span>✅</span>
+                <span id="loginSuccessText">Inicio de sesión exitoso</span>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="loginUsername">Usuario</label>
+                    <input type="text" id="loginUsername" required placeholder="Ingrese su usuario">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Contraseña</label>
+                    <input type="password" id="loginPassword" required placeholder="Ingrese su contraseña">
+                </div>
+                <div class="login-options">
+                    <label>
+                        <input type="checkbox" id="rememberMe"> Recordarme
+                    </label>
+                    <a href="#" onclick="showResetModal()">¿Olvidó su contraseña?</a>
+                </div>
+                <button type="submit" class="btn btn-primary">🔐 Iniciar Sesión</button>
+            </form>
+            <div class="login-footer">
+                <p>¿No tienes cuenta? <a href="#" onclick="showRegisterModal()">Registrarse</a></p>
+                <p style="margin-top: 10px; font-size: 9px; color: #998;">
+                    Usuario demo: <strong>admin</strong> | Contraseña: <strong>admin123</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MAIN APPLICATION ===== -->
+    <div id="mainApp">
+        <div class="notification-container" id="notificationContainer"></div>
+        <div class="container">
+            <header>
+                <h1>🗺️ Sistema Avanzado de Rutas Comerciales</h1>
+                <p>Gestión integral de Asesores Comerciales, clientes y rutas con medición de satisfacción</p>
+                <div class="user-info">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">Usuario</div>
+                        <div class="user-role" id="userRole">Rol</div>
+                    </div>
+                    <button class="btn-logout" onclick="logout()">🚪 Cerrar Sesión</button>
+                </div>
+            </header>
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+                <button class="tab" onclick="switchTab('rutas')">🗺️ Rutas</button>
+                <button class="tab" onclick="switchTab('asesores')">👥 Asesores</button>
+                <button class="tab" onclick="switchTab('clientes')">🏢 Clientes</button>
+                <button class="tab" onclick="switchTab('satisfaccion')">⭐ Satisfacción</button>
+                <button class="tab" onclick="switchTab('reportes')">📈 Reportes</button>
+                <button class="tab admin-only" onclick="switchTab('usuarios')" style="display: none;">👥 Usuarios</button>
+            </div>
+            
+            <!-- DASHBOARD -->
+            <div id="dashboard" class="tab-content active">
+                <h2 style="color: var(--primary); margin-bottom: 20px;">Panel de Control</h2>
+                <div class="stats-grid" id="statsGrid"></div>
+                <div class="chart-container">
+                    <canvas id="rutasChart" height="200"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="asesoresChart" height="200"></canvas>
+                </div>
+                <div class="form-section">
+                    <h2>Actividad Reciente</h2>
+                    <div id="recentActivity"></div>
+                </div>
+            </div>
+
+            <!-- RUTAS -->
+            <div id="rutas" class="tab-content">
+                <div class="form-section">
+                    <h2>
+                        <span>Registrar Nueva Ruta</span>
+                        <div class="export-buttons">
+                            <button class="btn btn-small btn-info" onclick="exportRutasToExcel()">📥 Exportar Excel</button>
+                        </div>
+                    </h2>
+                    <form id="routeForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="routeAsesor">Asesor Comercial *</label>
+                                <select id="routeAsesor" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="routeFecha">Fecha *</label>
+                                <input type="date" id="routeFecha" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="routeHoraInicio">Hora de Inicio *</label>
+                                <input type="time" id="routeHoraInicio" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="routeHoraFin">Hora de Fin</label>
+                                <input type="time" id="routeHoraFin">
+                            </div>
+                            <div class="form-group">
+                                <label for="routeZona">Zona/Región *</label>
+                                <input type="text" id="routeZona" required placeholder="Centro, Norte, Sur, etc.">
+                            </div>
+                            <div class="form-group">
+                                <label for="routeEstado">Estado *</label>
+                                <select id="routeEstado" required>
+                                    <option value="planificada">Planificada</option>
+                                    <option value="en-progreso">En Progreso</option>
+                                    <option value="completada">Completada</option>
+                                    <option value="cancelada">Cancelada</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="routeVehiculo">Vehículo/Placa</label>
+                                <input type="text" id="routeVehiculo" placeholder="ABC-123">
+                            </div>
+                            <div class="form-group">
+                                <label for="routeKmInicial">Km Inicial</label>
+                                <input type="number" id="routeKmInicial" placeholder="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="routeKmFinal">Km Final</label>
+                                <input type="number" id="routeKmFinal" placeholder="0" min="0">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="routeClientes">Clientes a Visitar *</label>
+                            <select id="routeClientes" multiple style="min-height: 120px;"></select>
+                            <small style="color: #666; margin-top: 5px; display: block;">
+                                Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples clientes
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label for="routeObservaciones">Observaciones</label>
+                            <textarea id="routeObservaciones" placeholder="Notas adicionales sobre la ruta..."></textarea>
+                        </div>
+                        <div style="margin-top: 20px; display: flex; gap: 10px;">
+                            <button type="submit" class="btn btn-primary">✅ Guardar Ruta</button>
+                            <button type="reset" class="btn btn-secondary">🔄 Limpiar</button>
+                            <button type="button" class="btn btn-info" id="generateQrBtn" style="display: none;">📱 Generar QR</button>
+                        </div>
+                    </form>
+                    <div id="qrContainer" class="qr-container" style="display: none; margin-top: 20px;">
+                        <div id="qrCode"></div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h2>Rutas Registradas</h2>
+                    <div class="filters">
+                        <div class="filter-group">
+                            <label for="filterRouteAsesor">Filtrar por Asesor</label>
+                            <select id="filterRouteAsesor"><option value="">Todos los asesores</option></select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterRouteEstado">Filtrar por Estado</label>
+                            <select id="filterRouteEstado">
+                                <option value="">Todos los estados</option>
+                                <option value="planificada">Planificada</option>
+                                <option value="en-progreso">En Progreso</option>
+                                <option value="completada">Completada</option>
+                                <option value="cancelada">Cancelada</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="filterRouteFecha">Filtrar por Fecha</label>
+                            <input type="date" id="filterRouteFecha">
+                        </div>
+                    </div>
+                    <div id="routesList"></div>
+                </div>
+            </div>
+
+            <!-- ASESORES -->
+            <div id="asesores" class="tab-content">
+                <div class="form-section">
+                    <h2>
+                        <span>Registrar Nuevo Asesor</span>
+                        <div class="export-buttons">
+                            <button class="btn btn-small btn-info" onclick="exportAsesoresToExcel()">📥 Exportar Excel</button>
+                        </div>
+                    </h2>
+                    <form id="asesorForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="asesorNombre">Nombre Completo *</label>
+                                <input type="text" id="asesorNombre" required placeholder="Juan Pérez">
+                            </div>
+                            <div class="form-group">
+                                <label for="asesorEmail">Email *</label>
+                                <input type="email" id="asesorEmail" required placeholder="juan@empresa.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="asesorTelefono">Teléfono *</label>
+                                <input type="tel" id="asesorTelefono" required placeholder="+57 300 123 4567">
+                            </div>
+                            <div class="form-group">
+                                <label for="asesorTipo">Tipo de Asesor *</label>
+                                <select id="asesorTipo" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="junior">Junior</option>
+                                    <option value="senior">Senior</option>
+                                    <option value="especialista">Especialista</option>
+                                    <option value="gerente">Gerente de Zona</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="asesorZona">Zona Asignada *</label>
+                                <input type="text" id="asesorZona" required placeholder="Centro, Norte, Sur">
+                            </div>
+                            <div class="form-group">
+                                <label for="asesorEstado">Estado *</label>
+                                <select id="asesorEstado" required>
+                                    <option value="activo">Activo</option>
+                                    <option value="inactivo">Inactivo</option>
+                                    <option value="vacaciones">Vacaciones</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="margin-top: 20px; display: flex; gap: 10px;">
+                            <button type="submit" class="btn btn-primary">✅ Guardar Asesor</button>
+                            <button type="reset" class="btn btn-secondary">🔄 Limpiar</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="form-section">
+                    <h2>Lista de Asesores</h2>
+                    <div class="search-box">
+                        <input type="text" id="searchAsesor" placeholder="🔍 Buscar asesor por nombre, email o teléfono...">
+                    </div>
+                    <div id="asesoresList"></div>
+                </div>
+            </div>
+
+            <!-- CLIENTES -->
+            <div id="clientes" class="tab-content">
+                <div class="form-section">
+                    <h2>
+                        <span>Registrar Nuevo Cliente</span>
+                        <div class="export-buttons">
+                            <button class="btn btn-small btn-info" onclick="exportClientesToExcel()">📥 Exportar Excel</button>
+                        </div>
+                    </h2>
+                    <form id="clienteForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="clienteNombre">Nombre/Razón Social *</label>
+                                <input type="text" id="clienteNombre" required placeholder="Empresa XYZ S.A.S.">
+                            </div>
+                            <div class="form-group">
+                                <label for="clienteNIT">NIT/Documento *</label>
+                                <input type="text" id="clienteNIT" required placeholder="900123456-7">
+                            </div>
+                            <div class="form-group">
+                                <label for="clienteTipo">Tipo de Cliente *</label>
+                                <select id="clienteTipo" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="mayorista">Mayorista</option>
+                                    <option value="minorista">Minorista</option>
+                                    <option value="corporativo">Corporativo</option>
+                                    <option value="distribuidor">Distribuidor</option>
+                                    <option value="gobierno">Gobierno</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="clienteContacto">Persona de Contacto *</label>
+                                <input type="text" id="clienteContacto" required placeholder="María García">
+                            </div>
+                            <div class="form-group">
+                                <label for="clienteEmail">Email *</label>
+                                <input type="email" id="clienteEmail" required placeholder="contacto@cliente.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="clienteTelefono">Teléfono *</label>
+                                <input type="tel" id="clienteTelefono" required placeholder="+57 601 234 5678">
+                            </div>
+                            <div class="form-group">
+                                <label for="clienteDireccion">Dirección *</label>
+                                <input type="text" id="clienteDireccion" required placeholder="Calle 123 #45-67">
+                            </div>
+                            <div class="form-group">
+                                <label for="clienteCiudad">Ciudad *</label>
+                                <input type="text" id="clienteCiudad" required placeholder="Medellín">
+                            </div>
+                            <div class="form-group">
+                                <label for="clienteZona">Zona *</label>
+                                <input type="text" id="clienteZona" required placeholder="Centro, Norte, Sur">
+                            </div>
+                            <div class="form-group">
+                                <label for="clienteEstado">Estado *</label>
+                                <select id="clienteEstado" required>
+                                    <option value="activo">Activo</option>
+                                    <option value="inactivo">Inactivo</option>
+                                    <option value="prospecto">Prospecto</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="clienteNotas">Notas Adicionales</label>
+                            <textarea id="clienteNotas" placeholder="Información relevante sobre el cliente..."></textarea>
+                        </div>
+                        <div style="margin-top: 20px; display: flex; gap: 10px;">
+                            <button type="submit" class="btn btn-primary">✅ Guardar Cliente</button>
+                            <button type="reset" class="btn btn-secondary">🔄 Limpiar</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="form-section">
+                    <h2>Lista de Clientes</h2>
+                    <div class="filters">
+                        <div class="filter-group">
+                            <input type="text" id="searchCliente" placeholder="🔍 Buscar cliente...">
+                        </div>
+                        <div class="filter-group">
+                            <select id="filterClienteTipo">
+                                <option value="">Todos los tipos</option>
+                                <option value="mayorista">Mayorista</option>
+                                <option value="minorista">Minorista</option>
+                                <option value="corporativo">Corporativo</option>
+                                <option value="distribuidor">Distribuidor</option>
+                                <option value="gobierno">Gobierno</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <select id="filterClienteEstado">
+                                <option value="">Todos los estados</option>
+                                <option value="activo">Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                                <option value="prospecto">Prospecto</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="clientesList"></div>
+                </div>
+            </div>
+
+            <!-- SATISFACCIÓN -->
+            <div id="satisfaccion" class="tab-content">
+                <h2 style="color: var(--primary); margin-bottom: 20px;">⭐ Medición de Satisfacción del Cliente</h2>
+                <div class="form-section">
+                    <h2>Registrar Encuesta de Satisfacción</h2>
+                    <form id="satisfaccionForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="satisfaccionRuta">Ruta *</label>
+                                <select id="satisfaccionRuta" required><option value="">Seleccione una ruta completada</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="satisfaccionCliente">Cliente *</label>
+                                <select id="satisfaccionCliente" required><option value="">Seleccione un cliente</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="satisfaccionCalificacion">Calificación (1-5) *</label>
+                                <select id="satisfaccionCalificacion" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="5">⭐⭐⭐⭐⭐ Excelente</option>
+                                    <option value="4">⭐⭐⭐⭐ Muy Bueno</option>
+                                    <option value="3">⭐⭐⭐ Bueno</option>
+                                    <option value="2">⭐⭐ Regular</option>
+                                    <option value="1">⭐ Malo</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="satisfaccionFecha">Fecha *</label>
+                                <input type="date" id="satisfaccionFecha" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="satisfaccionComentarios">Comentarios</label>
+                            <textarea id="satisfaccionComentarios" placeholder="Comentarios del cliente sobre la visita..."></textarea>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <button type="submit" class="btn btn-primary">✅ Registrar Satisfacción</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="form-section">
+                    <h2>Encuestas Registradas</h2>
+                    <div id="satisfaccionList">
+                        <div class="empty-state">
+                            <h3>No hay encuestas de satisfacción registradas</h3>
+                            <p style="margin-top: 10px; color: #999;">Registra la primera encuesta después de completar una ruta</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="satisfaccionChart" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- REPORTES -->
+            <div id="reportes" class="tab-content">
+                <h2 style="color: var(--primary); margin-bottom: 20px;">📈 Reportes y Análisis</h2>
+                <div class="chart-container">
+                    <h3>Distribución de Clientes por Tipo</h3>
+                    <canvas id="clientesTipoChart" height="200"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Rendimiento de Asesores</h3>
+                    <canvas id="rendimientoChart" height="200"></canvas>
+                </div>
+                <div class="form-section">
+                    <h2>
+                        <span>Resumen por Asesor</span>
+                        <button class="btn btn-small btn-info" onclick="exportReportesToExcel()">📥 Exportar Reporte</button>
+                    </h2>
+                    <div id="reporteAsesores"></div>
+                </div>
+                <div class="form-section">
+                    <h2>Resumen por Tipo de Cliente</h2>
+                    <div id="reporteClientes"></div>
+                </div>
+            </div>
+
+            <!-- USUARIOS (Admin Only) -->
+            <div id="usuarios" class="tab-content">
+                <div class="form-section">
+                    <h2>
+                        <span>Gestión de Usuarios</span>
+                        <button class="btn btn-small btn-primary" onclick="showRegisterModal()">➕ Nuevo Usuario</button>
+                    </h2>
+                    <div id="usuariosList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL REGISTRO USUARIO ===== -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📝 Registrar Nuevo Usuario</h2>
+                <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
+            </div>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="regUsername">Usuario *</label>
+                    <input type="text" id="regUsername" required placeholder="Nombre de usuario">
+                </div>
+                <div class="form-group">
+                    <label for="regNombre">Nombre Completo *</label>
+                    <input type="text" id="regNombre" required placeholder="Nombre completo">
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">Email *</label>
+                    <input type="email" id="regEmail" required placeholder="email@empresa.com">
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Contraseña *</label>
+                    <input type="password" id="regPassword" required placeholder="Mínimo 6 caracteres" minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="regConfirmPassword">Confirmar Contraseña *</label>
+                    <input type="password" id="regConfirmPassword" required placeholder="Repita la contraseña">
+                </div>
+                <div class="form-group">
+                    <label for="regRole">Rol *</label>
+                    <select id="regRole" required>
+                        <option value="asesor">Asesor</option>
+                        <option value="supervisor">Supervisor</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary">✅ Registrar</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('registerModal')">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== MODAL RESET PASSWORD ===== -->
+    <div id="resetModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔑 Recuperar Contraseña</h2>
+                <button class="modal-close" onclick="closeModal('resetModal')">&times;</button>
+            </div>
+            <div id="resetSuccess" class="success-message" style="display: none;">
+                <span>✅</span>
+                <span>Se ha enviado un email con instrucciones</span>
+            </div>
+            <form id="resetForm">
+                <div class="form-group">
+                    <label for="resetEmail">Email Registrado *</label>
+                    <input type="email" id="resetEmail" required placeholder="email@empresa.com">
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary">📧 Enviar</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('resetModal')">Cancelar</button>
+                </div>
+            </form>
+            <p style="margin-top: 15px; font-size: 13px; color: #666;">
+                Nota: En producción, esto enviaría un email real. Por ahora, use la contraseña por defecto.
+            </p>
+        </div>
+    </div>
+
+    <!-- Archivo JavaScript -->
+    <script src="js/script.js"></script>
+</body>
+</html>
